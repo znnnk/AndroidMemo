@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 
+// 通知管理
 public class StartNotification {
 
     public static void startTimeService(Long time,String title,String text,Context context){

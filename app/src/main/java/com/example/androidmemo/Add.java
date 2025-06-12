@@ -53,6 +53,7 @@ public class Add extends Fragment {
         timeEdit.setText(timeFormatter.format(new Date(remindDate.getTimeInMillis())));
 
         dateEdit.setOnClickListener(new View.OnClickListener() {
+            // 日期选择器
             @Override
             public void onClick(View view) {
                 new DatePickerDialog(getActivity(),new DatePickerDialog.OnDateSetListener() {
@@ -63,6 +64,7 @@ public class Add extends Fragment {
         });
 
         timeEdit.setOnClickListener(new View.OnClickListener() {
+            //时间选择器
             @Override
             public void onClick(View view) { new TimePickerDialog(getActivity(),new TimePickerDialog.OnTimeSetListener() {
                     @Override
@@ -88,6 +90,7 @@ public class Add extends Fragment {
                 cv.put("remindText",remindTextEdit.getText().toString());
                 dbWriter.insert("tb_ToDoItem",null, cv);
                 dbWriter.close();
+                // TimeService时间提醒
                 startTimeService(remindDate.getTimeInMillis()-System.currentTimeMillis(),
                         remindTitleEdit.getText().toString(),remindTextEdit.getText().toString());
                 getFragmentManager().beginTransaction()

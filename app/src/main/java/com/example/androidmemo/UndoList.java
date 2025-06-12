@@ -22,7 +22,7 @@ import java.util.Date;
 import java.util.HashMap;
 
 public class UndoList extends Fragment {
-
+    // 未完成事项
     public UndoList() {
     }
     private SQLiteDatabase dbRead;

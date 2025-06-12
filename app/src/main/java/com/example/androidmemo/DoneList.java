@@ -23,7 +23,7 @@ import java.util.Date;
 import java.util.HashMap;
 
 public class DoneList extends Fragment {
-
+    // 已完成事项
     public DoneList() {
     }
     private SQLiteDatabase dbRead;

@@ -75,7 +75,7 @@ public class RemindList extends Fragment {
                     taskList.add(temp);
                 }
             }
-        }else if(i==1){ //显示三天之后的提醒项
+        }else if(i==1){ // 显示三天之后的提醒项
             while(result.moveToNext()){
                 SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                 Date remindDay = null,today=null;
@@ -150,8 +150,8 @@ public class RemindList extends Fragment {
             }
         });
 
-        toDoList.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener(){//长按删除列表项
-
+        toDoList.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener(){
+            // 长按删除列表项
             @Override
             public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
                 HashMap<String,String> temp = (HashMap<String,String>)listViewAdapter.getItem(position);
