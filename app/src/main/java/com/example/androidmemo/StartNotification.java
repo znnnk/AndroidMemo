@@ -9,26 +9,26 @@ import android.database.sqlite.SQLiteDatabase;
 // 通知管理
 public class StartNotification {
 
-    public static void startTimeService(Long time,String title,String text,Context context){
+    public static void startTimeService(Long time, String title, String text, Context context) {
         int notificationID;
-        SQLiteDatabase dbRead=(new MyDBOpenHelper(context)).getReadableDatabase();
-        Intent intent=new Intent(context,TimeService.class);
-        Cursor result=dbRead.query("tb_Remind",new String[]{"notificationID"},null,null,null,null,null,null);
-        if (result.moveToFirst()){
-            notificationID=result.getInt(0);
-            SQLiteDatabase dbWriter=(new MyDBOpenHelper(context)).getWritableDatabase();
+        SQLiteDatabase dbRead = (new MyDBOpenHelper(context)).getReadableDatabase();
+        Intent intent = new Intent(context, TimeService.class);
+        Cursor result = dbRead.query("tb_Remind", new String[]{"notificationID"}, null, null, null, null, null, null);
+        if (result.moveToFirst()) {
+            notificationID = result.getInt(0);
+            SQLiteDatabase dbWriter = (new MyDBOpenHelper(context)).getWritableDatabase();
             ContentValues cv = new ContentValues();
-            cv.put("notificationID", notificationID+1);
-            dbWriter.update("tb_Remind", cv,null, null);
+            cv.put("notificationID", notificationID + 1);
+            dbWriter.update("tb_Remind", cv, null, null);
             dbWriter.close();
-        }else {
-            notificationID=0;
+        } else {
+            notificationID = 0;
         }
         dbRead.close();
         intent.putExtra("time", time);
-        intent.putExtra("title",title);
-        intent.putExtra("text",text);
-        intent.putExtra("notificationID",notificationID);
+        intent.putExtra("title", title);
+        intent.putExtra("text", text);
+        intent.putExtra("notificationID", notificationID);
         context.startService(intent);
     }
 }

@@ -20,7 +20,8 @@ class MyDBOpenHelper extends SQLiteOpenHelper {
                 "modifyDate text DEFAULT(' '), " +  //最后修改日期和时间
                 "remindText text DEFAULT(' '), " +    //待办事项的注释说明
                 "remindDate text DEFAULT(' '), " +    //待办事项的提醒日期和时间
-                "haveDo boolean DEFAULT(0));";      //是否已处理，默认值：false
+                "haveDo boolean DEFAULT(0), " + // 是否已处理
+                "isFavorite boolean DEFAULT(0));";   // 新增收藏字段
         db.execSQL(sql);
         sql = "create table tb_Remind(_id integer primary key autoincrement, " + //主键，自动增加
                 "remindID integer, notificationID integer);";      //用于保存状态栏提示Notification的ID
@@ -29,9 +30,14 @@ class MyDBOpenHelper extends SQLiteOpenHelper {
     }
 
     @Override
-    public void onUpgrade(SQLiteDatabase sqLiteDatabase, int i, int i2) {
+    public void onUpgrade(SQLiteDatabase sqLiteDatabase, int oldVersion, int newVersion) {
         sqLiteDatabase.execSQL("drop table if exists tb_ToDoItem");
         sqLiteDatabase.execSQL("drop table if exists tb_notificationID");
+        // 处理数据库升级
+        if (oldVersion < 2) { // 版本2添加收藏字段
+            sqLiteDatabase.execSQL("ALTER TABLE tb_ToDoItem ADD COLUMN isFavorite boolean DEFAULT 0");
+        }
         onCreate(sqLiteDatabase);
+
     }
 }

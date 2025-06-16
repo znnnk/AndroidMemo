@@ -1,56 +1,99 @@
 package com.example.androidmemo;
 
-import android.app.Notification;
-import android.app.NotificationManager;
+import static android.app.Service.START_STICKY;
+
+import android.annotation.SuppressLint;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.app.Service;
-import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 import android.os.IBinder;
+import android.os.SystemClock;
 import android.util.Log;
 
-import java.util.Timer;
-import java.util.TimerTask;
+import com.example.androidmemo.AlarmReceiver;
 
+import java.util.Date;
+
+// 2. 修改 TimeService 使用 AlarmManager
 public class TimeService extends Service {
-
-    private Timer timer;
-    @Override
-    public IBinder onBind(Intent intent) {
-        return null;
-    }
+    private static final String TAG = "TimeService";
+    private static final int REQUEST_CODE = 123456;
+    private AlarmManager alarmManager;
 
     @Override
     public void onCreate() {
         super.onCreate();
-        timer = new Timer(true);// 创建Timer对象
+        alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
+    }
+
+    @SuppressLint("ScheduleExactAlarm")
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        if (intent == null) return START_STICKY;
+
+        // 1. 获取参数
+        long time = intent.getLongExtra("time", 0);
+        String title = intent.getStringExtra("title");
+        String text = intent.getStringExtra("text");
+        int notificationId = intent.getIntExtra("notificationId", 0);
+
+        // 2. 验证参数
+        if (time <= 0 || title == null || text == null) {
+            Log.e(TAG, "Invalid parameters: time=" + time + ", title=" + title);
+            return START_STICKY;
+        }
+
+        // 3. 创建 PendingIntent
+        Intent alarmIntent = new Intent(this, AlarmReceiver.class);
+        alarmIntent.putExtra("time", time);
+        alarmIntent.putExtra("title", title);
+        alarmIntent.putExtra("text", text);
+        alarmIntent.putExtra("notificationId", notificationId);
+
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(
+                this,
+                REQUEST_CODE,
+                alarmIntent,
+                PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT
+        );
+
+        // 4. 设置闹钟（使用 ELAPSED_REALTIME_WAKEUP）
+        long triggerTime = SystemClock.elapsedRealtime() + time;
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            alarmManager.setExactAndAllowWhileIdle(
+                    AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                    triggerTime,
+                    pendingIntent
+            );
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            alarmManager.setExact(
+                    AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                    triggerTime,
+                    pendingIntent
+            );
+        } else {
+            alarmManager.set(
+                    AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                    triggerTime,
+                    pendingIntent
+            );
+        }
+
+        Log.d(TAG, "Alarm set for: " + new Date(triggerTime));
+        return START_STICKY;
     }
 
     @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        final String notificationTitle = intent.getStringExtra("title");
-        final String notificationText = intent.getStringExtra("text");
-        final int notificationID=intent.getIntExtra("notificationID",0);
-        Long waitTime=intent.getLongExtra("time",0);
-        Log.e("待办小助手--接收到的time",waitTime+"");
-        timer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                Log.e("待办小助手-TimeService的提示", "定时时间到，timer的 run()启动");
-                NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);// 获得通知管理器
-                Notification.Builder myBuilder=new Notification.Builder(TimeService.this);
-                myBuilder.setSmallIcon(R.mipmap.ic_warning)
-                        .setContentTitle(getText(R.string.notification_title)+notificationTitle)   // 定义通知的标题
-                        .setContentText(notificationText)    // 定义通知的内容
-                        .setAutoCancel(true)
-                        .setDefaults(Notification.DEFAULT_SOUND)   //定义默认铃声
-                        .setTicker(getText(R.string.notification_ticker));        // 定义一闪而过的提醒文字
-                Notification notification=myBuilder.build();     // 创建通知 ，至少:minSdkVersion="16"
-                notification.flags = Notification.FLAG_AUTO_CANCEL;   //点击通知后，该通知即消失
-                manager.notify(notificationID, notification);// 显示通知，加ID是为了显示多条Notification，每次通知完，通知ID递增一下，避免消息覆盖掉
-            }
-        }, waitTime);
-        return super.onStartCommand(intent, flags, startId);
+    public void onDestroy() {
+        super.onDestroy();
+        Log.d(TAG, "Service destroyed");
+    }
+
+    @Override
+    public IBinder onBind(Intent intent) {
+        return null;
     }
 }
-
-
