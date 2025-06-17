@@ -1,16 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- 添加精确闹钟权限 -->
+    <!--通知权限-->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!--精确闹钟权限-->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
-
-    <!-- 对于 Android 13+ 还需要添加这个权限 -->
-    <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
-
-    <!-- 唤醒锁定权限 -->
-    <uses-permission android:name="android.permission.WAKE_LOCK" />
-
+    <!--启动完成广播-->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application

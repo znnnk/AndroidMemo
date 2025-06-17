@@ -1,9 +1,7 @@
 package com.example.androidmemo;
 
 import static android.Manifest.permission.POST_NOTIFICATIONS;
-import static android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM;
 
-import android.app.AlarmManager;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -22,25 +20,14 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
-
 public class MainActivity extends AppCompatActivity {
-    private static final int REQUEST_CODE_EXACT_ALARM = 1001;
     private static final int REQUEST_NOTIFICATION_PERMISSION = 1002;
     private MyDBOpenHelper dbOpenHelper;
-    private Calendar createDate, remindDate;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        // 检查通知权限
-        checkNotificationPermission();
-        // 检查精确闹钟权限
-        checkExactAlarmPermission();
 
         dbOpenHelper = new MyDBOpenHelper(this);
         if (savedInstanceState == null) {
@@ -49,18 +36,6 @@ public class MainActivity extends AppCompatActivity {
                     .commit();
         }
         this.setTitle("备忘录");
-    }
-
-    private void checkNotificationPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this,
-                    POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-
-                ActivityCompat.requestPermissions(this,
-                        new String[]{POST_NOTIFICATIONS},
-                        REQUEST_NOTIFICATION_PERMISSION);
-            }
-        }
     }
 
     @Override
@@ -81,7 +56,6 @@ public class MainActivity extends AppCompatActivity {
     //添加menu菜单
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();  //获得menu容器
-
         inflater.inflate(R.menu.menu, menu);//用menu.xml填充menu容器
         return super.onCreateOptionsMenu(menu);
     }
@@ -115,7 +89,7 @@ public class MainActivity extends AppCompatActivity {
                     .replace(R.id.fragment_container, new DoneList())
                     .commit();
             return true;
-        } else if (id == R.id.menu_favorite) { // 新增收藏菜单项
+        } else if (id == R.id.menu_favorite) {
             getFragmentManager().beginTransaction()
                     .replace(R.id.fragment_container, new FavoriteList())
                     .commit();
@@ -150,44 +124,12 @@ public class MainActivity extends AppCompatActivity {
         exitAlert.setTitle("警告");
         exitAlert.setMessage("您确定要退出吗?");
         exitAlert.setNeutralButton("确定", new DialogInterface.OnClickListener() {
-
             public void onClick(DialogInterface arg0, int arg1) {
                 MainActivity.this.finish();
             }
-
         });
         exitAlert.setNegativeButton("取消", null);
         exitAlert.create();
         exitAlert.show();
-    }
-
-    private void checkExactAlarmPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
-            if (alarmManager != null) {
-                if (!alarmManager.canScheduleExactAlarms()) {
-                    Log.w("MainActivity", "缺少精确闹钟权限");
-                    Intent intent = new Intent(ACTION_REQUEST_SCHEDULE_EXACT_ALARM);
-                    startActivityForResult(intent, REQUEST_CODE_EXACT_ALARM);
-                } else {
-                    Log.d("MainActivity", "已有精确闹钟权限");
-                }
-            } else {
-                Log.e("MainActivity", "无法获取AlarmManager");
-            }
-        }
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REQUEST_CODE_EXACT_ALARM) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
-                if (!alarmManager.canScheduleExactAlarms()) {
-                    Toast.makeText(this, "需要精确闹钟权限才能设置提醒", Toast.LENGTH_LONG).show();
-                }
-            }
-        }
     }
 }
