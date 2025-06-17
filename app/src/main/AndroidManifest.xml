@@ -1,7 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <!-- 添加精确闹钟权限 -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
+
+    <!-- 对于 Android 13+ 还需要添加这个权限 -->
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
+
+    <!-- 唤醒锁定权限 -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -21,9 +32,19 @@
         <service
             android:name=".TimeService"
             android:enabled="true"
-            android:exported="true">
+            android:exported="false">
         </service>
 
+        <receiver
+            android:name=".AlarmReceiver"
+            android:enabled="true"
+            android:exported="true"> <!-- 必须设置为 true -->
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <!-- 添加自定义 action -->
+                <action android:name="com.example.androidmemo.ALARM_ACTION" />
+            </intent-filter>
+        </receiver>
     </application>
 
 

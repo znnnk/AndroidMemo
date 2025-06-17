@@ -4,7 +4,7 @@ import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
-class MyDBOpenHelper extends SQLiteOpenHelper {
+public class MyDBOpenHelper extends SQLiteOpenHelper {
 
 
     public MyDBOpenHelper(Context context) {

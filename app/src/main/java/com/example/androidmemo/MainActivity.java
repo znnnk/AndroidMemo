@@ -1,21 +1,34 @@
 package com.example.androidmemo;
 
+import static android.Manifest.permission.POST_NOTIFICATIONS;
+import static android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM;
+
+import android.app.AlarmManager;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.database.sqlite.SQLiteDatabase;
+import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 
 public class MainActivity extends AppCompatActivity {
+    private static final int REQUEST_CODE_EXACT_ALARM = 1001;
+    private static final int REQUEST_NOTIFICATION_PERMISSION = 1002;
     private MyDBOpenHelper dbOpenHelper;
     private Calendar createDate, remindDate;
 
@@ -23,6 +36,12 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        // 检查通知权限
+        checkNotificationPermission();
+        // 检查精确闹钟权限
+        checkExactAlarmPermission();
+
         dbOpenHelper = new MyDBOpenHelper(this);
         if (savedInstanceState == null) {
             getFragmentManager().beginTransaction()
@@ -30,6 +49,33 @@ public class MainActivity extends AppCompatActivity {
                     .commit();
         }
         this.setTitle("备忘录");
+    }
+
+    private void checkNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this,
+                    POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+
+                ActivityCompat.requestPermissions(this,
+                        new String[]{POST_NOTIFICATIONS},
+                        REQUEST_NOTIFICATION_PERMISSION);
+            }
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQUEST_NOTIFICATION_PERMISSION) {
+            if (grantResults.length > 0 &&
+                    grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Log.d("MainActivity", "通知权限已授予");
+            } else {
+                Toast.makeText(this, "需要通知权限才能显示提醒", Toast.LENGTH_LONG).show();
+            }
+        }
     }
 
     //添加menu菜单
@@ -53,12 +99,6 @@ public class MainActivity extends AppCompatActivity {
             return true;
         } else if (id == R.id.menu_exit) {
             showExit();
-            return true;
-        } else if (id == R.id.menu_test) {
-            showTestData();
-            getFragmentManager().beginTransaction()
-                    .replace(R.id.fragment_container, new RemindList())
-                    .commit();
             return true;
         } else if (id == R.id.menu_first) {
             getFragmentManager().beginTransaction()
@@ -121,40 +161,33 @@ public class MainActivity extends AppCompatActivity {
         exitAlert.show();
     }
 
-    private void showTestData() {
-        MyDBOpenHelper dbOpenHelper = new MyDBOpenHelper(this);
-        SQLiteDatabase db = dbOpenHelper.getWritableDatabase();
-        SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        remindDate = Calendar.getInstance();
-        String yesterday = dateFormatter.format(new Date(remindDate.getTimeInMillis() - 86400000));//昨天这个时候
-        String today = dateFormatter.format(new Date(remindDate.getTimeInMillis() + 60000));//今天一分钟后
-        String today2 = dateFormatter.format(new Date(remindDate.getTimeInMillis() + 3600000));//今天今天一小时后
-        String tomorrow = dateFormatter.format(new Date(remindDate.getTimeInMillis() + 86400000));//明天这个时候
-        String aftertomorrow1 = dateFormatter.format(new Date(remindDate.getTimeInMillis() + 86400000 * 2));//后天这个时候
-        String aftertomorrow2 = dateFormatter.format(new Date(remindDate.getTimeInMillis() + 86400000 * 3));//大后天这个时候
+    private void checkExactAlarmPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
+            if (alarmManager != null) {
+                if (!alarmManager.canScheduleExactAlarms()) {
+                    Log.w("MainActivity", "缺少精确闹钟权限");
+                    Intent intent = new Intent(ACTION_REQUEST_SCHEDULE_EXACT_ALARM);
+                    startActivityForResult(intent, REQUEST_CODE_EXACT_ALARM);
+                } else {
+                    Log.d("MainActivity", "已有精确闹钟权限");
+                }
+            } else {
+                Log.e("MainActivity", "无法获取AlarmManager");
+            }
+        }
+    }
 
-        String sql_insert = "insert into tb_ToDoItem(createDate,remindTitle,remindText,remindDate) " +
-                "values ('" + yesterday + "','开会','评选优秀员工','" + today + "');";
-        db.execSQL(sql_insert);
-        StartNotification.startTimeService(new Long(60000), "下午2点开会", "会议议题,评选优秀员工", this);
-
-        sql_insert = "insert into tb_ToDoItem(createDate,remindTitle,remindText,remindDate) " +
-                "values ('" + yesterday + "','晚上吃饭','火锅','" + today2 + "');";
-        db.execSQL(sql_insert);
-        StartNotification.startTimeService(new Long(1000 * 60 * 60), "晚上吃饭", "火锅", this);
-
-        sql_insert = "insert into tb_ToDoItem(createDate,remindTitle,remindText,remindDate) " +
-                "values ('" + yesterday + "','实验','操作系统','" + tomorrow + "');";
-        db.execSQL(sql_insert);
-        StartNotification.startTimeService(new Long(1000 * 60 * 60), "实验", "操作系统", this);
-
-        sql_insert = "insert into tb_ToDoItem(createDate,remindTitle,remindText,remindDate) " +
-                "values ('" + yesterday + "','画画','水彩','" + aftertomorrow1 + "');";
-        db.execSQL(sql_insert);
-        StartNotification.startTimeService(new Long(1000 * 60 * 60), "画画", "水彩", this);
-        sql_insert = "insert into tb_ToDoItem(createDate,remindTitle,remindText,remindDate) " +
-                "values ('" + yesterday + "','实验报告','嵌入式计算器','" + aftertomorrow2 + "');";
-        db.execSQL(sql_insert);
-        StartNotification.startTimeService(new Long(1000 * 60 * 60), "实验报告", "计算器", this);
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_CODE_EXACT_ALARM) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
+                if (!alarmManager.canScheduleExactAlarms()) {
+                    Toast.makeText(this, "需要精确闹钟权限才能设置提醒", Toast.LENGTH_LONG).show();
+                }
+            }
+        }
     }
 }

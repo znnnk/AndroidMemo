@@ -105,12 +105,18 @@ public class Add extends Fragment {
                 dbWriter.insert("tb_ToDoItem", null, cv);
                 dbWriter.close();
                 // TimeService时间提醒
-                startTimeService(remindDate.getTimeInMillis() - System.currentTimeMillis(),
-                        remindTitleEdit.getText().toString(), remindTextEdit.getText().toString());
+                StartNotification.startTimeService(
+                        remindDate.getTimeInMillis() - System.currentTimeMillis(),
+                        remindTitleEdit.getText().toString(),
+                        remindTextEdit.getText().toString(),
+                        getActivity().getApplicationContext()
+                );
+
+                Log.d("Add", "已调用StartNotification.startTimeService");
+
                 getFragmentManager().beginTransaction()
                         .replace(R.id.fragment_container, new RemindList())
                         .commit();
-
             }
         });
         return rootView;
@@ -139,5 +145,14 @@ public class Add extends Fragment {
         getActivity().startService(intent);  //启动Service
     }
 
+    private void navigateToRemindList() {
+        if (getFragmentManager() != null) {
+            getFragmentManager().beginTransaction()
+                    .replace(R.id.fragment_container, new RemindList())
+                    .commit();
+        } else {
+            Log.e("Add", "FragmentManager为空，无法导航");
+        }
+    }
 }
 
