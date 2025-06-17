@@ -1,3 +1,5 @@
+- 环境：Android 15.0 、API 35
+
 **核心功能**
 1. 笔记管理:创建、编辑、点击查看、长按删除文本笔记
 2. 分类标签:为笔记添加标签并支持按标签选（待办/已办）
@@ -7,5 +9,5 @@
 **其他**
 - 参考项目：https://github.com/SoonFa/AndroidMemo
 - 修改UI
-- 提醒功能将time修改为AlarmManager
+- 提醒功能将TimerTask修改为AlarmManager实现
 - 新增收藏功能
