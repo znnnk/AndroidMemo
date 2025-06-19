@@ -182,14 +182,6 @@ public class RemindList extends BaseFragment  {
                                         .commit();
                             }
                         })
-                        .setPositiveButton(isFavoritered ? "取消收藏" : "收藏", new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog, int which) {
-                                toggleStarStatus(taskID, null);
-                                getFragmentManager().beginTransaction()
-                                        .replace(R.id.fragment_container, new RemindList())
-                                        .commit();
-                            }
-                        })
                         .create()
                         .show();
             }

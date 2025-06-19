@@ -35,7 +35,7 @@ public class MainActivity extends AppCompatActivity {
                     .add(R.id.fragment_container, new RemindList())
                     .commit();
         }
-        this.setTitle("备忘录");
+        this.setTitle("2022030383钟柠锴の备忘录");
     }
 
     @Override

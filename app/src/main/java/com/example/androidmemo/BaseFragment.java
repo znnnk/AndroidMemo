@@ -30,7 +30,6 @@ public class BaseFragment extends Fragment {
             db.update("tb_ToDoItem", values, "_id=?", new String[]{taskId});
         }
         cursor.close();
-//        db.close();
 
         // 更新图标状态（如果提供了视图）
         if (starIcon != null) {
@@ -38,6 +37,34 @@ public class BaseFragment extends Fragment {
                 starIcon.setImageDrawable(starFilled);
             } else {
                 starIcon.setImageDrawable(starOutline);
+            }
+        }
+
+        refreshCurrentFragment();
+    }
+
+    // 新增方法：刷新当前Fragment
+    protected void refreshCurrentFragment() {
+        if (getActivity() != null) {
+            Fragment currentFragment = getActivity().getFragmentManager()
+                    .findFragmentById(R.id.fragment_container);
+
+            if (currentFragment instanceof RemindList) {
+                getFragmentManager().beginTransaction()
+                        .replace(R.id.fragment_container, new RemindList())
+                        .commit();
+            } else if (currentFragment instanceof FavoriteList) {
+                getFragmentManager().beginTransaction()
+                        .replace(R.id.fragment_container, new FavoriteList())
+                        .commit();
+            } else if (currentFragment instanceof UndoList) {
+                getFragmentManager().beginTransaction()
+                        .replace(R.id.fragment_container, new UndoList())
+                        .commit();
+            } else if (currentFragment instanceof DoneList) {
+                getFragmentManager().beginTransaction()
+                        .replace(R.id.fragment_container, new DoneList())
+                        .commit();
             }
         }
     }

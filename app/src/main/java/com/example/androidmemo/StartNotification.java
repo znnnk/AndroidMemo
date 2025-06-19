@@ -13,6 +13,11 @@ public class StartNotification {
     private static final String TAG = "StartNotification";
 
     public static void startTimeService(long timeInMillis, String title, String text, Context context) {
+        if (timeInMillis <= 0) {
+            Log.w(TAG, "过期时间，不设置提醒");
+            return;
+        }
+
         Log.d(TAG, "开始设置时间服务 - 相对时间: " + timeInMillis + "ms, 标题: " + title);
 
         int notificationID = 0;

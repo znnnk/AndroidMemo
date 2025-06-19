@@ -31,7 +31,6 @@ public class Update extends Fragment {
     private MyDBOpenHelper dbOpenHelper;
     private Button btnUpdate, btnCancel;
     private EditText taskEdit, dateEdit, timeEdit, remarkEdit;
-    private CheckBox favoriteCheckBox;
     private Calendar newRemindDate = Calendar.getInstance();
     private boolean isFavorite = false;
     private String updateID;
@@ -51,7 +50,6 @@ public class Update extends Fragment {
         dateEdit = rootView.findViewById(R.id.etUpdateDate);
         timeEdit = rootView.findViewById(R.id.etUpdateTime);
         remarkEdit = rootView.findViewById(R.id.etUpdateRemark);
-        favoriteCheckBox = rootView.findViewById(R.id.cbFavorite);
 
         if (getActivity() == null) {
             return rootView;
@@ -62,16 +60,6 @@ public class Update extends Fragment {
 
         // 先加载任务数据再设置UI
         loadTaskData();
-
-        // 设置收藏复选框状态和监听器
-        favoriteCheckBox.setChecked(isFavorite);
-        favoriteCheckBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                isFavorite = isChecked;
-                updateFavoriteStatus(updateID, isChecked);
-            }
-        });
 
         // 日期选择器
         dateEdit.setOnClickListener(new View.OnClickListener() {
@@ -179,27 +167,6 @@ public class Update extends Fragment {
             if (dbRead != null) {
                 dbRead.close();
             }
-        }
-    }
-
-    // 实时更新收藏状态到数据库
-    private void updateFavoriteStatus(String taskId, boolean isFavorite) {
-        try (SQLiteDatabase db = dbOpenHelper.getWritableDatabase()) {
-            ContentValues values = new ContentValues();
-            values.put("isFavorite", isFavorite ? 1 : 0);
-            int rowsAffected = db.update("tb_ToDoItem", values, "_id=?", new String[]{taskId});
-
-            if (rowsAffected > 0) {
-                String message = isFavorite ? "已收藏" : "已取消收藏";
-                Toast.makeText(getActivity(), message, Toast.LENGTH_SHORT).show();
-                favoriteCheckBox.setChecked(isFavorite);
-            } else {
-                Toast.makeText(getActivity(), "收藏状态更新失败", Toast.LENGTH_SHORT).show();
-                favoriteCheckBox.setChecked(!isFavorite);
-            }
-        } catch (Exception e) {
-            Log.e("Update", "Error updating favorite status", e);
-            Toast.makeText(getActivity(), "更新失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
 
