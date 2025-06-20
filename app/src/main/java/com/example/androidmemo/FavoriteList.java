@@ -56,7 +56,7 @@ public class FavoriteList extends BaseFragment {
             temp.put("_id", String.valueOf(result.getInt(0)));
             temp.put("remindTitle", result.getString(1));
             temp.put("remindDate", "提醒时间：" + result.getString(3));
-            temp.put("remindText", "备注：" + result.getString(2));
+            temp.put("remindText", result.getString(2));
             temp.put("taskHaveDo", result.getInt(4) == 0 ? "×未处理" : "√已处理");
             temp.put("isFavorite", String.valueOf(result.getInt(5)));
             taskList.add(temp);

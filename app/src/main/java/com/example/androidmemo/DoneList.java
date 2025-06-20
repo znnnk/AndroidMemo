@@ -96,7 +96,7 @@ public class DoneList extends BaseFragment {
             temp.put("_id", String.valueOf(result.getInt(0)));
             temp.put("remindTitle", result.getString(1));
             temp.put("remindDate", "过期时间：" + result.getString(3));
-            temp.put("remindText", "备注：" + result.getString(2));
+            temp.put("remindText", result.getString(2));
             temp.put("taskHaveDo", "√已处理");
             temp.put("isFavorite", String.valueOf(result.getInt(5)));
             taskList.add(temp);
@@ -170,7 +170,7 @@ public class DoneList extends BaseFragment {
                 "提醒时间：" + cursor.getString(3).substring(11);
 
         temp.put("remindDate", timeDisplay);
-        temp.put("remindText", "备注：" + cursor.getString(2));
+        temp.put("remindText", cursor.getString(2));
         temp.put("taskHaveDo", "√已处理");
         temp.put("isFavorite", String.valueOf(cursor.getInt(5)));
         taskList.add(temp);
@@ -223,7 +223,7 @@ public class DoneList extends BaseFragment {
             details.append("标题：").append(result.getString(1)).append("\n");
             details.append("创建时间：").append(result.getString(2)).append("\n");
             details.append("最后修改：").append(result.getString(3)).append("\n");
-            details.append("备注：").append(result.getString(4)).append("\n");
+            details.append("内容：").append(result.getString(4)).append("\n");
             details.append("提醒时间：").append(result.getString(5)).append("\n");
             details.append("√已处理");
             final boolean isFavoritered = result.getInt(7) == 1;
@@ -233,10 +233,6 @@ public class DoneList extends BaseFragment {
                     .setMessage(details.toString())
                     .setNegativeButton("设为未处理", (dialog, which) -> updateTaskStatus(taskID, 0))
                     .setNeutralButton("修改内容", (dialog, which) -> openUpdateFragment(taskID))
-                    .setPositiveButton(isFavoritered ? "取消收藏" : "收藏", (dialog, which) -> {
-                        toggleStarStatus(taskID, null);
-                        refreshFragment();
-                    })
                     .create()
                     .show();
         }

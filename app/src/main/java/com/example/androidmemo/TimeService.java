@@ -64,108 +64,37 @@ public class TimeService extends Service {
 
         PendingIntent pendingIntent = null;
 
-        int flag;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            // Android 12+ 需要显式声明可变性
-            flag = PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_MUTABLE;
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            // Android 6.0-11 使用不可变标志
-            flag = PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE;
-        } else {
-            // 旧版 Android
-            flag = PendingIntent.FLAG_UPDATE_CURRENT;
-        }
         try {
+            Log.w(TAG, "尝试使用 FLAG_MUTABLE 创建PendingIntent");
+            int mutableFlags = PendingIntent.FLAG_UPDATE_CURRENT;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                mutableFlags |= PendingIntent.FLAG_MUTABLE;
+            }
+
             pendingIntent = PendingIntent.getBroadcast(
                     this,
-                    notificationId, // 唯一ID
+                    notificationId,
                     alarmIntent,
-                    flags
+                    mutableFlags
             );
-            Log.d(TAG, "PendingIntent创建成功");
-        } catch (Exception e) {
-            Log.e(TAG, "创建PendingIntent失败", e);
-
-            // 添加详细的错误日志
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                Log.e(TAG, "Android 12+ 可能需要 FLAG_MUTABLE 标志");
-            }
-
-            // 尝试备选方案 - 使用 FLAG_MUTABLE
-            try {
-                Log.w(TAG, "尝试使用 FLAG_MUTABLE 创建PendingIntent");
-                int mutableFlags = PendingIntent.FLAG_UPDATE_CURRENT;
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    mutableFlags |= PendingIntent.FLAG_MUTABLE;
-                }
-
-                pendingIntent = PendingIntent.getBroadcast(
-                        this,
-                        notificationId,
-                        alarmIntent,
-                        mutableFlags
-                );
-                Log.w(TAG, "备选方案成功 - 使用 FLAG_MUTABLE");
-            } catch (Exception ex) {
-                Log.e(TAG, "备选方案也失败", ex);
-                stopSelf();
-                return START_NOT_STICKY;
-            }
-        }
-
-        // 设置闹钟前的日志
-        Log.d(TAG, "准备设置闹钟...");
-        Log.d(TAG, "AlarmManager状态: " + (alarmManager != null ? "已初始化" : "未初始化"));
-        Log.d(TAG, "PendingIntent状态: " + (pendingIntent != null ? "有效" : "无效"));
-
-        if (alarmManager == null) {
-            Log.e(TAG, "AlarmManager为空，无法设置闹钟");
+            Log.w(TAG, "创建PendingIntent成功");
+        } catch (Exception ex) {
+            Log.e(TAG, "创建PendingIntent失败", ex);
             stopSelf();
             return START_NOT_STICKY;
         }
 
         // 设置闹钟
         try {
-            Log.d(TAG, "开始设置闹钟 - 触发时间: " + new Date(triggerAtMillis));
-
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 Log.d(TAG, "检测Android 12+ 精确闹钟权限");
-                if (alarmManager.canScheduleExactAlarms()) {
-                    Log.d(TAG, "有精确闹钟权限，使用setExactAndAllowWhileIdle");
-                    alarmManager.setExactAndAllowWhileIdle(
-                            AlarmManager.RTC_WAKEUP,
-                            triggerAtMillis,
-                            pendingIntent
-                    );
-                } else {
-                    Log.w(TAG, "缺少精确闹钟权限，使用set方法回退");
-                    alarmManager.set(
-                            AlarmManager.RTC_WAKEUP,
-                            triggerAtMillis,
-                            pendingIntent
-                    );
-                }
-            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                Log.d(TAG, "使用setExactAndAllowWhileIdle (Android M+)");
-                alarmManager.setExactAndAllowWhileIdle(
-                        AlarmManager.RTC_WAKEUP,
-                        triggerAtMillis,
-                        pendingIntent
-                );
-            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-                Log.d(TAG, "使用setExact (Android KITKAT+)");
-                alarmManager.setExact(
-                        AlarmManager.RTC_WAKEUP,
-                        triggerAtMillis,
-                        pendingIntent
-                );
-            } else {
-                Log.d(TAG, "使用set (旧版Android)");
                 alarmManager.set(
                         AlarmManager.RTC_WAKEUP,
                         triggerAtMillis,
                         pendingIntent
                 );
+            } else {
+                Log.d(TAG, "未检测Android 12+ 精确闹钟权限");
             }
 
             Log.d(TAG, "闹钟设置成功! 触发时间: " + new Date(triggerAtMillis));

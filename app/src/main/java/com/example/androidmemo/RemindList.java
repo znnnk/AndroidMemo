@@ -99,7 +99,7 @@ public class RemindList extends BaseFragment  {
             temp.put("_id", String.valueOf(result.getInt(0)));
             temp.put("remindTitle", result.getString(1));
             temp.put("remindDate", "过期时间：" + result.getString(3)); // 显示完整日期时间
-            temp.put("remindText", "备注：" + result.getString(2));
+            temp.put("remindText", result.getString(2));
             temp.put("taskHaveDo", result.getInt(4) == 0 ? "×未处理" : "√已处理");
             temp.put("isFavorite", String.valueOf(result.getInt(5)));
             taskList.add(temp);
@@ -171,7 +171,7 @@ public class RemindList extends BaseFragment  {
                 "提醒时间：" + cursor.getString(3).substring(11);
 
         temp.put("remindDate", timeDisplay);
-        temp.put("remindText", "备注：" + cursor.getString(2));
+        temp.put("remindText", cursor.getString(2));
         temp.put("taskHaveDo", cursor.getInt(4) == 0 ? "×未处理" : "√已处理");
         temp.put("isFavorite", String.valueOf(cursor.getInt(5)));
         taskList.add(temp);
@@ -224,7 +224,7 @@ public class RemindList extends BaseFragment  {
             details.append("标题：").append(result.getString(1)).append("\n");
             details.append("创建时间：").append(result.getString(2)).append("\n");
             details.append("最后修改：").append(result.getString(3)).append("\n");
-            details.append("备注：").append(result.getString(4)).append("\n");
+            details.append("内容：").append(result.getString(4)).append("\n");
             details.append("提醒时间：").append(result.getString(5)).append("\n");
             details.append(result.getInt(6) == 0 ? "×未处理" : "√已处理");
 

@@ -14,11 +14,18 @@ public class AlarmReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        Log.d(TAG, "闹钟触发 - 接收广播");
-
         // 获取传递参数
         String title = intent.getStringExtra("title");
         String text = intent.getStringExtra("text");
+
+        // 添加空值检查
+        if (title == null && text == null) {
+            Log.e(TAG, "收到无效提醒: 标题或内容为空");
+            return;
+        }
+
+        Log.d(TAG, "闹钟触发 - 接收广播");
+
         int notificationId = intent.getIntExtra("notificationId", 0);
 
         Log.d(TAG, "通知参数 - ID: " + notificationId + ", 标题: " + title + ", 内容: " + text);
@@ -52,7 +59,7 @@ public class AlarmReceiver extends BroadcastReceiver {
             Notification.Builder builder = new Notification.Builder(context, "memo_channel")
                     .setContentTitle(title)
                     .setContentText(text)
-                    .setSmallIcon(R.drawable.ic_launcher_foreground)
+                    .setSmallIcon(R.drawable.ic_icon)
                     .setAutoCancel(true)
                     .setPriority(Notification.PRIORITY_DEFAULT);
 
