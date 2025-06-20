@@ -8,6 +8,6 @@
 
 **其他**
 - 参考项目：https://github.com/SoonFa/AndroidMemo
-- 修改UI
+- 修改UI，显示今天之前的事项
 - 提醒功能将TimerTask修改为AlarmManager实现
 - 新增收藏功能
