@@ -17,6 +17,40 @@
             android:layout_height="match_parent"
             android:orientation="vertical">
 
+            <!-- 已过期分组 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#2b6cb0"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="10dp"
+                    android:textColor="#B71C1C"
+                    android:textSize="25sp" />
+
+                <TextView
+                    android:id="@+id/tvExpired"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center_vertical"
+                    android:padding="10dp"
+                    android:textColor="#FFFFFF"
+                    android:textSize="25sp" />
+            </LinearLayout>
+
+            <View style="@style/divider_horizontal" />
+
+            <ListView
+                android:id="@+id/listExpired"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+            <View style="@style/divider_horizontal" />
+
+            <!-- 今天分组 -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -28,7 +62,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:padding="10dp"
-                    android:text="今天："
+                    android:text="今天:"
                     android:textColor="#ffffff"
                     android:textSize="25sp" />
 
@@ -52,6 +86,7 @@
 
             <View style="@style/divider_horizontal" />
 
+            <!-- 明天分组 -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -86,6 +121,7 @@
 
             <View style="@style/divider_horizontal" />
 
+            <!-- 后天分组 -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -120,6 +156,7 @@
 
             <View style="@style/divider_horizontal" />
 
+            <!-- 未来分组 -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

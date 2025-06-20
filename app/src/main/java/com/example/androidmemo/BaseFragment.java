@@ -31,7 +31,7 @@ public class BaseFragment extends Fragment {
         }
         cursor.close();
 
-        // 更新图标状态（如果提供了视图）
+        // 更新图标状态
         if (starIcon != null) {
             if (newStatus == 1) {
                 starIcon.setImageDrawable(starFilled);
