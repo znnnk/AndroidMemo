@@ -44,14 +44,14 @@ public class RemindList extends BaseFragment  {
         tvTomorrow = (TextView) rootView.findViewById(R.id.tvTomorrow);
         tvAfterTomorrow = (TextView) rootView.findViewById(R.id.tvAfterTomorrow);
         tvAfterAll = (TextView) rootView.findViewById(R.id.tvAfterAll);
-        tvExpired = (TextView) rootView.findViewById(R.id.tvExpired); // 新增的过期文本视图
+        tvExpired = (TextView) rootView.findViewById(R.id.tvExpired);
 
         // 初始化列表视图
         listToDoToday = (ListView) rootView.findViewById(R.id.listToDoToday);
         listToDoTomorrow = (ListView) rootView.findViewById(R.id.listToDoTomorrow);
         listToDoAfterTomorrow = (ListView) rootView.findViewById(R.id.listToDoAfterTomorrow);
         listToDoAfterAll = (ListView) rootView.findViewById(R.id.listToDoAfterAll);
-        listExpired = (ListView) rootView.findViewById(R.id.listExpired); // 新增的过期列表视图
+        listExpired = (ListView) rootView.findViewById(R.id.listExpired);
 
         dbOpenHelper = new MyDBOpenHelper(getActivity().getApplicationContext());
         starFilled = getResources().getDrawable(R.drawable.ic_star_filled);
@@ -74,7 +74,7 @@ public class RemindList extends BaseFragment  {
         readToDoList(new Date(currentTime + 86400000), listToDoTomorrow, 0);
         readToDoList(new Date(currentTime + 86400000 * 2), listToDoAfterTomorrow, 0);
         readToDoList(new Date(currentTime + 86400000 * 3), listToDoAfterAll, 1);
-        readExpiredTasks(listExpired); // 加载过期任务
+        readExpiredTasks(listExpired); // 过期任务
 
         return rootView;
     }

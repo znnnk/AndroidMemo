@@ -31,8 +31,9 @@ public class DoneList extends BaseFragment {
     }
 
     private SQLiteDatabase dbRead;
-    private ListView listToDoToday, listToDoTomorrow, listToDoAfterTomorrow, listToDoAfterAll;
-    private TextView tvToday, tvTomorrow, tvAfterTomorrow, tvAfterAll;
+    private ListView listToDoToday, listToDoTomorrow, listToDoAfterTomorrow,
+            listToDoAfterAll, listExpired;
+    private TextView tvToday, tvTomorrow, tvAfterTomorrow, tvAfterAll, tvExpired;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -42,11 +43,13 @@ public class DoneList extends BaseFragment {
         tvTomorrow = (TextView) rootView.findViewById(R.id.tvTomorrow);
         tvAfterTomorrow = (TextView) rootView.findViewById(R.id.tvAfterTomorrow);
         tvAfterAll = (TextView) rootView.findViewById(R.id.tvAfterAll);
+        tvExpired = (TextView) rootView.findViewById(R.id.tvExpired); // 新增
 
         listToDoToday = (ListView) rootView.findViewById(R.id.listToDoToday);
         listToDoTomorrow = (ListView) rootView.findViewById(R.id.listToDoTomorrow);
         listToDoAfterTomorrow = (ListView) rootView.findViewById(R.id.listToDoAfterTomorrow);
         listToDoAfterAll = (ListView) rootView.findViewById(R.id.listToDoAfterAll);
+        listExpired = (ListView) rootView.findViewById(R.id.listExpired); // 新增
 
         // 初始化公共资源
         dbOpenHelper = new MyDBOpenHelper(getActivity().getApplicationContext());
@@ -54,70 +57,133 @@ public class DoneList extends BaseFragment {
         starOutline = getResources().getDrawable(R.drawable.ic_star_outline);
 
         SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy年MM月dd日");
-        tvToday.setText(dateFormatter.format(new Date(System.currentTimeMillis())));
-        tvTomorrow.setText(dateFormatter.format(new Date(System.currentTimeMillis() + 86400000)));
-        tvAfterTomorrow.setText(dateFormatter.format(new Date(System.currentTimeMillis() + 86400000 * 2)));
-        tvAfterAll.setText(dateFormatter.format(new Date(System.currentTimeMillis() + 86400000 * 3)) + "之后");
+        long currentTime = System.currentTimeMillis();
+        tvToday.setText(dateFormatter.format(new Date(currentTime)));
+        tvTomorrow.setText(dateFormatter.format(new Date(currentTime + 86400000)));
+        tvAfterTomorrow.setText(dateFormatter.format(new Date(currentTime + 86400000 * 2)));
+        tvAfterAll.setText(dateFormatter.format(new Date(currentTime + 86400000 * 3)) + "之后");
+        tvExpired.setText("今天之前"); // 设置过期分组标题
 
         dbRead = dbOpenHelper.getReadableDatabase();
 
-        readToDoList(new Date(System.currentTimeMillis()), listToDoToday, 0);
-        readToDoList(new Date(System.currentTimeMillis() + 86400000), listToDoTomorrow, 0);
-        readToDoList(new Date(System.currentTimeMillis() + 86400000 * 2), listToDoAfterTomorrow, 0);
-        readToDoList(new Date(System.currentTimeMillis()), listToDoAfterAll, 1);
+        // 加载所有任务列表（已处理）
+        readToDoList(new Date(currentTime), listToDoToday, 0);
+        readToDoList(new Date(currentTime + 86400000), listToDoTomorrow, 0);
+        readToDoList(new Date(currentTime + 86400000 * 2), listToDoAfterTomorrow, 0);
+        readToDoList(new Date(currentTime + 86400000 * 3), listToDoAfterAll, 1);
+        readExpiredTasks(listExpired); // 加载过期任务（已处理）
+
         return rootView;
     }
 
-    protected void readToDoList(Date toDoDay, ListView toDoList, int i) {
+    // 新增方法：读取已处理的过期任务
+    protected void readExpiredTasks(ListView expiredList) {
         SimpleDateFormat dayFormatter = new SimpleDateFormat("yyyy-MM-dd");
+        String todayStr = dayFormatter.format(new Date());
 
-        ArrayList taskList = new ArrayList<HashMap<String, String>>();
-        // 修改排序逻辑：先按收藏状态降序，再按提醒时间升序
-        Cursor result = dbRead.query("tb_ToDoItem", new String[]{
-                        "_id", "remindTitle", "remindText", "remindDate", "haveDo", "isFavorite"},
-                "haveDo=?", new String[]{"1"}, null, null, "isFavorite DESC, remindDate ASC", null);
-        if (i == 0) {
-            while (result.moveToNext()) {
-                if (result.getString(3).substring(0, 10).compareTo(dayFormatter.format(toDoDay)) == 0) {
-                    HashMap<String, String> temp = new HashMap<String, String>();
-                    temp.put("_id", String.valueOf(result.getInt(0)));
-                    temp.put("remindTitle", result.getString(1));
-                    temp.put("remindDate", "提醒时间：" + result.getString(3).substring(11));
-                    temp.put("remindText", "备注：" + result.getString(2));
-                    temp.put("taskHaveDo", result.getInt(4) == 0 ? "×未处理" : "√已处理");
-                    temp.put("isFavorite", String.valueOf(result.getInt(5)));
-                    taskList.add(temp);
+        ArrayList<HashMap<String, String>> taskList = new ArrayList<>();
+
+        // 查询已处理的过期任务
+        Cursor result = dbRead.query("tb_ToDoItem",
+                new String[]{"_id", "remindTitle", "remindText", "remindDate", "haveDo", "isFavorite"},
+                "substr(remindDate, 1, 10) < ? AND haveDo = ?",
+                new String[]{todayStr, "1"},
+                null, null,
+                "isFavorite DESC, remindDate DESC", null);
+
+        while (result.moveToNext()) {
+            HashMap<String, String> temp = new HashMap<>();
+            temp.put("_id", String.valueOf(result.getInt(0)));
+            temp.put("remindTitle", result.getString(1));
+            temp.put("remindDate", "过期时间：" + result.getString(3));
+            temp.put("remindText", "备注：" + result.getString(2));
+            temp.put("taskHaveDo", "√已处理");
+            temp.put("isFavorite", String.valueOf(result.getInt(5)));
+            taskList.add(temp);
+        }
+        result.close();
+
+        // 创建适配器并设置监听器
+        createAdapterAndSetListeners(taskList, expiredList);
+    }
+
+    // 重构后的 readToDoList 方法
+    protected void readToDoList(Date toDoDay, ListView toDoList, int listType) {
+        SimpleDateFormat dayFormatter = new SimpleDateFormat("yyyy-MM-dd");
+        ArrayList<HashMap<String, String>> taskList = new ArrayList<>();
+
+        // 获取基准日期字符串
+        String baseDateStr = dayFormatter.format(toDoDay);
+        String threeDaysLaterStr = dayFormatter.format(new Date(toDoDay.getTime()));
+
+        Cursor result = null;
+        try {
+            // 查询数据库并按优先级排序（只查询已处理任务）
+            result = dbRead.query("tb_ToDoItem",
+                    new String[]{"_id", "remindTitle", "remindText", "remindDate", "haveDo", "isFavorite"},
+                    "haveDo = ?", new String[]{"1"},
+                    null, null,
+                    "isFavorite DESC, remindDate ASC", null);
+
+            if (result != null) {
+                while (result.moveToNext()) {
+                    String remindDateStr = result.getString(3);
+                    String remindDateOnly = remindDateStr.substring(0, 10);
+
+                    // 今日/明日/后日列表
+                    if (listType == 0) {
+                        if (remindDateOnly.equals(baseDateStr)) {
+                            addTaskToList(result, taskList, false);
+                        }
+                    }
+                    // 三天后列表
+                    else if (listType == 1) {
+                        try {
+                            // 使用字符串比较日期
+                            if (remindDateOnly.compareTo(threeDaysLaterStr) >= 0) {
+                                addTaskToList(result, taskList, true);
+                            }
+                        } catch (Exception e) {
+                            Log.e("DateCompare", "日期比较错误: " + e.getMessage());
+                        }
+                    }
                 }
             }
-        } else if (i == 1) {
-            while (result.moveToNext()) {
-                SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                Date remindDay = null, today = null;
-                try {
-                    remindDay = dateFormatter.parse(result.getString(3));
-                    today = dayFormatter.parse(dayFormatter.format(toDoDay));
-                    if (((remindDay.getTime() - today.getTime()) / (24 * 3600 * 1000)) >= 3) {
-                        HashMap<String, String> temp = new HashMap<String, String>();
-                        temp.put("_id", String.valueOf(result.getInt(0)));
-                        temp.put("remindTitle", result.getString(1));
-                        temp.put("remindDate", "提醒时间：" + result.getString(3));
-                        temp.put("remindText", "备注：" + result.getString(2));
-                        temp.put("taskHaveDo", result.getInt(4) == 0 ? "×未处理" : "√已处理");
-                        temp.put("isFavorite", String.valueOf(result.getInt(5)));
-                        taskList.add(temp);
-                    }
-                } catch (ParseException e) {
-                    e.printStackTrace();
-                }
+        } finally {
+            if (result != null) {
+                result.close();
             }
         }
 
+        // 创建适配器并设置监听器
+        createAdapterAndSetListeners(taskList, toDoList);
+    }
+
+    private void addTaskToList(Cursor cursor, ArrayList<HashMap<String, String>> taskList, boolean showFullDate) {
+        HashMap<String, String> temp = new HashMap<>();
+        temp.put("_id", String.valueOf(cursor.getInt(0)));
+        temp.put("remindTitle", cursor.getString(1));
+
+        // 根据类型决定显示完整日期还是仅时间
+        String timeDisplay = showFullDate ?
+                "提醒时间：" + cursor.getString(3) :
+                "提醒时间：" + cursor.getString(3).substring(11);
+
+        temp.put("remindDate", timeDisplay);
+        temp.put("remindText", "备注：" + cursor.getString(2));
+        temp.put("taskHaveDo", "√已处理");
+        temp.put("isFavorite", String.valueOf(cursor.getInt(5)));
+        taskList.add(temp);
+    }
+
+    private void createAdapterAndSetListeners(final ArrayList<HashMap<String, String>> taskList, final ListView listView) {
         final SimpleAdapter listViewAdapter = new SimpleAdapter(
                 getActivity(),
                 taskList,
                 R.layout.remind_list_item,
                 new String[]{"remindDate", "remindTitle", "remindText", "taskHaveDo"},
-                new int[]{R.id.remind_listitem_remindDate, R.id.remind_listitem_taskTitle, R.id.remind_listitem_taskText, R.id.remind_listitem_haveDo}
+                new int[]{R.id.remind_listitem_remindDate, R.id.remind_listitem_taskTitle,
+                        R.id.remind_listitem_taskText, R.id.remind_listitem_haveDo}
         ) {
             @Override
             public View getView(int position, View convertView, ViewGroup parent) {
@@ -126,123 +192,113 @@ public class DoneList extends BaseFragment {
                 final String taskId = item.get("_id");
                 final String isFavorite = item.get("isFavorite");
                 ImageView starIcon = view.findViewById(R.id.starIcon);
-                if ("1".equals(isFavorite)) {
-                    starIcon.setImageDrawable(starFilled);
-                } else {
-                    starIcon.setImageDrawable(starOutline);
-                }
-                starIcon.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        toggleStarStatus(taskId, starIcon);
-                    }
-                });
+                starIcon.setImageDrawable("1".equals(isFavorite) ? starFilled : starOutline);
+
+                starIcon.setOnClickListener(v -> toggleStarStatus(taskId, starIcon));
                 return view;
             }
         };
 
-        toDoList.setAdapter(listViewAdapter);
-        setListViewHeight(toDoList);
+        listView.setAdapter(listViewAdapter);
+        setListViewHeight(listView);
 
-        toDoList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
-                HashMap<String, String> temp = (HashMap<String, String>) listViewAdapter.getItem(position);
-                final String taskID = temp.get("_id");
-                Cursor result = dbRead.query("tb_ToDoItem", null, "_id=? ", new String[]{taskID}, null, null, null, null);
-                result.moveToFirst();
-                HashMap<String, String> findByID = new HashMap<String, String>();
-                findByID.put("id", "ID：" + String.valueOf(result.getInt(0)) + "\n");
-                findByID.put("remindTitle", "标题：" + result.getString(1) + "\n");
-                findByID.put("createDate", "创建时间：" + result.getString(2) + "\n");
-                String ll = result.getString(3).equals(" ") ? result.getString(2) : result.getString(3);
-                findByID.put("modifyDate", "最后修改：" + ll + "\n");
-                findByID.put("remindText", "备注：" + result.getString(4) + "\n");
-                findByID.put("remindDate", "提醒时间：" + result.getString(5) + "\n");
-                findByID.put("haveDo", result.getInt(6) == 0 ? "该事项未处理" : "该事项已经处理");
-                final boolean isFavoritered = result.getInt(7) == 1;
-
-                new AlertDialog.Builder(getActivity())
-                        .setTitle("详细信息")
-                        .setMessage(findByID.get("remindTitle") + findByID.get("createDate") + findByID.get("modifyDate") + findByID.get("remindText") + findByID.get("remindDate") + findByID.get("haveDo"))
-                        .setNegativeButton("设为未处理", new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface arg0, int arg1) {
-                                SQLiteDatabase dbWriter = dbOpenHelper.getWritableDatabase();
-                                ContentValues cv = new ContentValues();
-                                cv.put("haveDo", 0);
-                                dbWriter.update("tb_ToDoItem", cv, "_id=?", new String[]{taskID});
-                                dbWriter.close();
-                                getFragmentManager().beginTransaction()
-                                        .replace(R.id.fragment_container, new DoneList())
-                                        .commit();
-                            }
-                        })
-                        .setNeutralButton("修改该项内容", new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface arg0, int arg1) {
-                                SQLiteDatabase dbWriter = dbOpenHelper.getWritableDatabase();
-                                final Bundle bundle = new Bundle();
-                                bundle.putString("taskID", taskID);
-                                Update update = new Update();
-                                update.setArguments(bundle);
-                                getFragmentManager().beginTransaction()
-                                        .replace(R.id.fragment_container, update)
-                                        .addToBackStack(null)
-                                        .commit();
-                            }
-                        })
-                        .setPositiveButton(isFavoritered ? "取消收藏" : "收藏", new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog, int which) {
-                                toggleStarStatus(taskID, null);
-                                getFragmentManager().beginTransaction()
-                                        .replace(R.id.fragment_container, new DoneList())
-                                        .commit();
-                            }
-                        })
-                        .create()
-                        .show();
-            }
+        // 短按查看详情
+        listView.setOnItemClickListener((parent, view, position, id) -> {
+            HashMap<String, String> item = (HashMap<String, String>) listViewAdapter.getItem(position);
+            showTaskDetailsDialog(item.get("_id"));
         });
 
-        toDoList.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
-            @Override
-            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-                HashMap<String, String> temp = (HashMap<String, String>) listViewAdapter.getItem(position);
-                final String taskID = temp.get("_id");
-                new AlertDialog.Builder(getActivity())
-                        .setTitle("警告")
-                        .setMessage("您要删除这条待办事项吗?")
-                        .setPositiveButton("删除", new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface arg0, int arg1) {
-                                SQLiteDatabase dbWriter = dbOpenHelper.getWritableDatabase();
-                                dbWriter.delete("tb_ToDoItem", "_id=?", new String[]{taskID});
-                                dbWriter.close();
-                                getFragmentManager().beginTransaction()
-                                        .replace(R.id.fragment_container, new DoneList())
-                                        .commit();
-                            }
-                        })
-                        .setNegativeButton("取消", null)
-                        .create()
-                        .show();
-                return true;
-            }
+        // 长按删除
+        listView.setOnItemLongClickListener((parent, view, position, id) -> {
+            HashMap<String, String> item = (HashMap<String, String>) listViewAdapter.getItem(position);
+            showDeleteConfirmationDialog(item.get("_id"), item.get("remindTitle"));
+            return true;
         });
     }
 
-    public static void setListViewHeight(ListView listview) {
-        int totalHeight = 0;
-        ListAdapter adapter = listview.getAdapter();
-        if (null != adapter) {
-            for (int i = 0; i < adapter.getCount(); i++) {
-                View listItem = adapter.getView(i, null, listview);
-                if (null != listItem) {
-                    listItem.measure(0, 0);
-                    totalHeight += listItem.getMeasuredHeight();
-                }
-            }
-            ViewGroup.LayoutParams params = listview.getLayoutParams();
-            params.height = totalHeight + (listview.getDividerHeight() * (listview.getCount() - 1));
-            listview.setLayoutParams(params);
+    private void showTaskDetailsDialog(final String taskID) {
+        Cursor result = dbRead.query("tb_ToDoItem", null, "_id=?", new String[]{taskID}, null, null, null);
+        if (result.moveToFirst()) {
+            StringBuilder details = new StringBuilder();
+            details.append("标题：").append(result.getString(1)).append("\n");
+            details.append("创建时间：").append(result.getString(2)).append("\n");
+            details.append("最后修改：").append(result.getString(3)).append("\n");
+            details.append("备注：").append(result.getString(4)).append("\n");
+            details.append("提醒时间：").append(result.getString(5)).append("\n");
+            details.append("√已处理");
+            final boolean isFavoritered = result.getInt(7) == 1;
+
+            new AlertDialog.Builder(getActivity())
+                    .setTitle("详细信息")
+                    .setMessage(details.toString())
+                    .setNegativeButton("设为未处理", (dialog, which) -> updateTaskStatus(taskID, 0))
+                    .setNeutralButton("修改内容", (dialog, which) -> openUpdateFragment(taskID))
+                    .setPositiveButton(isFavoritered ? "取消收藏" : "收藏", (dialog, which) -> {
+                        toggleStarStatus(taskID, null);
+                        refreshFragment();
+                    })
+                    .create()
+                    .show();
         }
+        result.close();
+    }
+
+    private void updateTaskStatus(String taskID, int status) {
+        SQLiteDatabase dbWriter = dbOpenHelper.getWritableDatabase();
+        ContentValues cv = new ContentValues();
+        cv.put("haveDo", status);
+        dbWriter.update("tb_ToDoItem", cv, "_id=?", new String[]{taskID});
+        dbWriter.close();
+        refreshFragment();
+    }
+
+    private void openUpdateFragment(String taskID) {
+        Bundle bundle = new Bundle();
+        bundle.putString("taskID", taskID);
+        Update updateFragment = new Update();
+        updateFragment.setArguments(bundle);
+        getFragmentManager().beginTransaction()
+                .replace(R.id.fragment_container, updateFragment)
+                .addToBackStack(null)
+                .commit();
+    }
+
+    private void showDeleteConfirmationDialog(final String taskID, String title) {
+        new AlertDialog.Builder(getActivity())
+                .setTitle("警告")
+                .setMessage("删除待办事项？\n\n标题：" + title)
+                .setPositiveButton("删除", (dialog, which) -> deleteTask(taskID))
+                .setNegativeButton("取消", null)
+                .create()
+                .show();
+    }
+
+    private void deleteTask(String taskID) {
+        SQLiteDatabase dbWriter = dbOpenHelper.getWritableDatabase();
+        dbWriter.delete("tb_ToDoItem", "_id=?", new String[]{taskID});
+        dbWriter.close();
+        refreshFragment();
+    }
+
+    private void refreshFragment() {
+        getFragmentManager().beginTransaction()
+                .replace(R.id.fragment_container, new DoneList())
+                .commit();
+    }
+
+    public static void setListViewHeight(ListView listview) {
+        ListAdapter adapter = listview.getAdapter();
+        if (adapter == null) return;
+
+        int totalHeight = 0;
+        for (int i = 0; i < adapter.getCount(); i++) {
+            View listItem = adapter.getView(i, null, listview);
+            listItem.measure(0, 0);
+            totalHeight += listItem.getMeasuredHeight();
+        }
+
+        ViewGroup.LayoutParams params = listview.getLayoutParams();
+        params.height = totalHeight + (listview.getDividerHeight() * (listview.getCount() - 1));
+        listview.setLayoutParams(params);
     }
 }
