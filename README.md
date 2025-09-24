@@ -129,7 +129,7 @@ app/src/main/java/com/example/androidmemo/
 
 ## 🔧 主要改进
 
-相比原版项目（https://github.com/SoonFa/AndroidMemo)，本应用进行了以下优化：
+相比原版项目(https://github.com/SoonFa/AndroidMemo)，本应用进行了以下优化：
 
 1. **UI优化**: 重新设计界面，提升用户体验
 2. **提醒机制**: 将TimerTask改为AlarmManager，提高提醒可靠性
